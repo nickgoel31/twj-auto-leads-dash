@@ -2,25 +2,171 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #09090b;
+  --border: #e4e4e7;
+  --ring: #18181b;
+  
+  --primary: #7c3aed;
+  --primary-foreground: #ffffff;
+  
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.dark {
+  --background: #09090b;
+  --foreground: #fafafa;
+  --border: #27272a;
+  --ring: #d4d4d8;
+  
+  --primary: #8b5cf6;
+  --primary-foreground: #ffffff;
+  
+  --card: #18181b;
+  --card-foreground: #fafafa;
+  
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme {
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), sans-serif;
+  overflow-y: auto;
 }
+
+/* Glassmorphism effects */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .glass-panel {
+  background: rgba(24, 24, 27, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Custom premium scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1aa;
+}
+
+/* Interactive card glow effect */
+.glow-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.glow-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.glow-card:hover::after {
+  opacity: 1;
+}
+
+/* Grid overlay background */
+.grid-bg {
+  background-image: radial-gradient(rgba(120, 119, 198, 0.08) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+.dark .grid-bg {
+  background-image: radial-gradient(rgba(120, 119, 198, 0.04) 1px, transparent 0);
+}
+
+@media print {
+  html, body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    height: auto !important;
+    overflow: visible !important;
+    font-family: 'Geist', sans-serif !important;
+    visibility: hidden !important;
+  }
+  .print-only {
+    display: block !important;
+    visibility: visible !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 210mm !important;
+    height: auto !important;
+  }
+  .print-only * {
+    visibility: visible !important;
+  }
+  .page-break {
+    page-break-before: always;
+    break-before: page;
+  }
+  
+  /* Force A4 print-only contents to use dark text to override Tailwind dark mode style states */
+  .print-only, .print-only * {
+    color: #000000 !important;
+    background-color: transparent !important;
+    border-color: #e4e4e7 !important;
+  }
+
+  /* Retain specific orange accent colors from design cover page */
+  .print-only .text-\[\#ff4500\], .print-only .text-\[\#ff4500\] * {
+    color: #ff4500 !important;
+  }
+
+  /* Retain exact background elements and shapes for cover page */
+  .print-only .bg-gradient-to-br, 
+  .print-only .bg-gradient-to-tr, 
+  .print-only .bg-zinc-900 {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+.print-only {
+  display: none;
+}
+
+
