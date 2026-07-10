@@ -2,8 +2,7 @@
 
 import * as db from "@/lib/turso";
 import type { ParsedProposal, PricingRow, ProposalMeta } from "@/lib/proposal-types";
-import fs from "fs";
-import path from "path";
+
 
 export async function fetchPricingCatalog() {
   return await db.getPricing();
@@ -35,6 +34,8 @@ export async function generateLeadProposal(
   // Read pricing.md guidelines if exists
   let pricingMdContent = "";
   try {
+    const fs = await import("fs");
+    const path = await import("path");
     const pricingMdPath = path.join(process.cwd(), "pricing.md");
     if (fs.existsSync(pricingMdPath)) {
       pricingMdContent = fs.readFileSync(pricingMdPath, "utf-8");
