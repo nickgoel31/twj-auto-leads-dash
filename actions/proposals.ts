@@ -47,9 +47,15 @@ export async function generateLeadProposal(
     console.warn("Failed to read pricing.md context:", e);
   }
 
-  const geminiApiKey = process.env.GEMINI_API_KEY;
-  const openRouterApiKey = process.env.OPENROUTER_API_KEY;
-  const openaiApiKey = process.env.OPENAI_API_KEY;
+  const geminiApiKey = process.env.GEMINI_API_KEY || process.env.gemini_api_key;
+  const openRouterApiKey = process.env.OPENROUTER_API_KEY || process.env.openrouter_api_key;
+  const openaiApiKey = process.env.OPENAI_API_KEY || process.env.openai_api_key || process.env.OpenAI_API_Key;
+
+  console.log("Proposal generation API Key status:", {
+    hasOpenAI: !!openaiApiKey,
+    hasOpenRouter: !!openRouterApiKey,
+    hasGemini: !!geminiApiKey
+  });
 
   const meta: ProposalMeta = {
     clientName: lead.name,
@@ -244,7 +250,8 @@ Return ONLY a JSON object (no markdown code blocks, no explanation) with this ex
         aiGenerated = true;
         console.log("Successfully generated proposal using OpenAI model: gpt-4o-mini");
       } else {
-        console.warn("OpenAI API returned error status:", res.status);
+        const errText = await res.text();
+        console.warn("OpenAI API returned error status:", res.status, "Response:", errText);
       }
     } catch (e) {
       console.warn("OpenAI generation failed:", e);
