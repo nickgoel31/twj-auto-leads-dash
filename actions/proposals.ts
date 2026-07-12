@@ -369,6 +369,42 @@ Return ONLY a JSON object (no markdown code blocks, no explanation) with this ex
     }
   }
 
+  // Failsafe: Post-process to guarantee agreedPricing is strictly respected
+  if (agreedPricing) {
+    finalTotalInvestment = `₹${agreedPricing.toLocaleString()} + GST`;
+    
+    if (finalPricingRows.length === 1) {
+      finalPricingRows[0].price = `₹${agreedPricing.toLocaleString()}`;
+    } else if (finalPricingRows.length > 1) {
+      let totalOriginal = 0;
+      const numericPrices = finalPricingRows.map((item) => {
+        const val = Number(item.price.replace(/[^0-9]/g, ""));
+        totalOriginal += val;
+        return val;
+      });
+
+      if (totalOriginal > 0) {
+        let sumScaled = 0;
+        finalPricingRows = finalPricingRows.map((item, idx) => {
+          if (idx === finalPricingRows.length - 1) {
+            return {
+              ...item,
+              price: `₹${(agreedPricing - sumScaled).toLocaleString()}`
+            };
+          }
+          const scaled = Math.round((numericPrices[idx] / totalOriginal) * agreedPricing);
+          sumScaled += scaled;
+          return {
+            ...item,
+            price: `₹${scaled.toLocaleString()}`
+          };
+        });
+      } else {
+        finalPricingRows[0].price = `₹${agreedPricing.toLocaleString()}`;
+      }
+    }
+  }
+
   const proposal: ParsedProposal = {
     title: title,
     sections: [
