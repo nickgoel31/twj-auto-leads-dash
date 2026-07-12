@@ -178,7 +178,9 @@ ${pricingMdContent}
 Agreed Pricing: ${agreedPricing ? `₹${agreedPricing}` : "None"}
 
 Based on the call summary and the pricing catalog / pricing rules above:
-1. Formulate the recommended services (name, price, billing structure, description) that match the Service Type: "${serviceType}". If Agreed Pricing is specified above (and is not "None"), you MUST adjust the pricing of the recommended services so that the sum of their prices matches the Agreed Pricing exactly (e.g. if Agreed Pricing is ₹4,000, make the service item price ₹4,000 or distribute the items to sum exactly to ₹4,000).
+1. Formulate the recommended services (name, price, billing structure, description) that match the Service Type: "${serviceType}". 
+   - CRITICAL: If Agreed Pricing is specified above (and is not "None"), you MUST ignore any pricing or numbers mentioned in the Call Summary (for example, if the Call Summary mentions 4000 but the Agreed Pricing is 8000, you MUST use 8000). The total investment and the sum of recommended service prices MUST match the Agreed Pricing exactly.
+   - If Agreed Pricing is "None", default back to the pricing mentioned in the Call Summary or the pricing rules in pricing.md.
 2. Calculate the total investment (must match the Agreed Pricing exactly if specified).
 3. Tailor the title, executive summary, scope, timeline and next steps specifically to the Service Type: "${serviceType}" and client goals.
 
