@@ -1,3 +1,9 @@
+export interface PortfolioItem {
+  imageUrl: string;
+  category: string;
+  description: string;
+}
+
 export interface ProposalSection {
   heading: string;
   content: string;
@@ -19,6 +25,10 @@ export interface ParsedProposal {
   totalInvestment: string;
   timeline: string[];
   nextSteps: string[];
+  wantsPortfolio?: boolean;
+  portfolioItems?: PortfolioItem[];
+  serviceType?: string;
+  agreedPricing?: number;
 }
 
 export interface ProposalMeta {
@@ -28,3 +38,4 @@ export interface ProposalMeta {
   clientPhone: string;
   generatedAt: string;
 }
+

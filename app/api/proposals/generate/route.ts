@@ -1,11 +1,20 @@
+import React from "react";
 import { NextResponse } from "next/server";
 import { generateLeadProposal } from "@/actions/proposals";
 import * as db from "@/lib/turso";
+import { pdf } from "@react-pdf/renderer";
+import { ProposalDocument } from "@/components/proposal-document";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     let { leadId, callSummary } = body;
+    const wantsPortfolio = body.wantsPortfolio === true || body.wantsPortfolio === "true" || body.wants_portfolio === true || body.wants_portfolio === "true";
+    const serviceType = body.serviceType || body.service_type || "website";
+    const agreedPricing = body.agreedPricing ? Number(body.agreedPricing) : (body.agreed_pricing ? Number(body.agreed_pricing) : undefined);
+    
+    const url = new URL(request.url);
+    const format = url.searchParams.get("format") || body.format;
 
     // Fallback variables if leadId is not provided
     const phone = body.phone || body.mobileNumber || body.mobile_number || body.mobile;
@@ -86,7 +95,19 @@ export async function POST(request: Request) {
     const summaryToUse = payloadCallSummary || lead.call_summary || "General service discussion.";
 
     // Trigger proposal generation
-    const result = await generateLeadProposal(leadIdToUse, summaryToUse);
+    const result = await generateLeadProposal(leadIdToUse, summaryToUse, wantsPortfolio, serviceType, agreedPricing);
+
+    if (format === "pdf") {
+      const doc = React.createElement(ProposalDocument, { proposal: result.proposal, meta: result.meta, originUrl: url.origin });
+      const buffer = await pdf(doc as any).toBuffer();
+      const clientNameSafe = result.meta.clientName.replace(/[^a-z0-9]/gi, "_");
+      return new NextResponse(buffer as any, {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `attachment; filename="proposal_${clientNameSafe}.pdf"`,
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,

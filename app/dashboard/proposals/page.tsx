@@ -31,6 +31,9 @@ export default function ProposalsPage() {
   const [isPending, startTransition] = useTransition();
   const [isDownloading, setIsDownloading] = useState(false);
   const [loadingLeads, setLoadingLeads] = useState(true);
+  const [wantsPortfolio, setWantsPortfolio] = useState(false);
+  const [serviceType, setServiceType] = useState<"website" | "marketing" | "ai-chatbot" | "ai-voice-agent" >("website");
+  const [agreedPricing, setAgreedPricing] = useState<string>("");
   const [curlTab, setCurlTab] = useState<"id" | "fields">("id");
 
   useEffect(() => {
@@ -67,7 +70,7 @@ export default function ProposalsPage() {
     if (!selectedLeadId) return;
     startTransition(async () => {
       try {
-        const res = await generateLeadProposal(selectedLeadId, callSummary);
+        const res = await generateLeadProposal(selectedLeadId, callSummary, wantsPortfolio, serviceType, agreedPricing ? Number(agreedPricing) : undefined);
         if (res.success) {
           setProposal(res.proposal);
           setMeta(res.meta);
@@ -98,7 +101,10 @@ export default function ProposalsPage() {
   -H "Content-Type: application/json" \\
   -d '{
     "leadId": ${selectedLeadId || 1},
-    "callSummary": "${(callSummary || "Client wants standard web application support.").replace(/"/g, '\\"').slice(0, 100)}"
+    "callSummary": "${(callSummary || "Client wants standard web application support.").replace(/"/g, '\\"').slice(0, 100)}",
+    "wantsPortfolio": ${wantsPortfolio},
+    "serviceType": "${serviceType}"${agreedPricing ? `,
+    "agreedPricing": ${agreedPricing}` : ""}
   }'`;
 
   const curlCodeFields = `curl -X POST http://localhost:3000/api/proposals/generate \\
@@ -108,7 +114,10 @@ export default function ProposalsPage() {
     "name": "${(selectedLead?.name || "Acme Corp").replace(/"/g, '\\"')}",
     "city": "${(selectedLead?.city || "Mumbai").replace(/"/g, '\\"')}",
     "category": "${(selectedLead?.category || "Restaurant").replace(/"/g, '\\"')}",
-    "callSummary": "${(callSummary || "Client wants standard web application support.").replace(/"/g, '\\"').slice(0, 100)}"
+    "callSummary": "${(callSummary || "Client wants standard web application support.").replace(/"/g, '\\"').slice(0, 100)}",
+    "wantsPortfolio": ${wantsPortfolio},
+    "serviceType": "${serviceType}"${agreedPricing ? `,
+    "agreedPricing": ${agreedPricing}` : ""}
   }'`;
 
   const activeCurlCode = curlTab === "id" ? curlCodeId : curlCodeFields;
@@ -187,6 +196,50 @@ export default function ProposalsPage() {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                      Service Type
+                    </label>
+                    <select
+                      value={serviceType}
+                      onChange={(e) => setServiceType(e.target.value as any)}
+                      className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 text-xs transition-all focus:border-violet-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                    >
+                      <option value="website">Website</option>
+                      <option value="marketing">Marketing</option>
+                      <option value="ai-chatbot">AI Chatbot</option>
+                      <option value="ai-voice-agent">AI Voice Agent</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-6">
+                    <input
+                      type="checkbox"
+                      id="wantsPortfolio"
+                      checked={wantsPortfolio}
+                      onChange={(e) => setWantsPortfolio(e.target.checked)}
+                      className="h-4 w-4 rounded border-zinc-300 text-violet-600 focus:ring-violet-500"
+                    />
+                    <label htmlFor="wantsPortfolio" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer">
+                      Include Portfolio
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                    Agreed Price (₹, optional)
+                  </label>
+                  <input
+                    type="number"
+                    value={agreedPricing}
+                    onChange={(e) => setAgreedPricing(e.target.value)}
+                    placeholder="e.g., 4000"
+                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 text-xs transition-all focus:border-violet-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                  />
                 </div>
 
                 {selectedLead && (
@@ -401,6 +454,31 @@ export default function ProposalsPage() {
                       )}
                     </div>
                   ))}
+
+                  {/* Portfolio Section Preview */}
+                  {proposal.wantsPortfolio && proposal.portfolioItems && proposal.portfolioItems.length > 0 && (
+                    <div className="space-y-3 mt-6 border-t border-zinc-100 dark:border-zinc-800 pt-6">
+                      <h2 className="text-sm font-bold text-violet-600 dark:text-violet-400">
+                        Selected Portfolio Projects
+                      </h2>
+                      <p className="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                        The following works will be included in the PDF:
+                      </p>
+                      <div className="grid grid-cols-3 gap-3">
+                        {proposal.portfolioItems.map((item, idx) => (
+                          <div key={idx} className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-2 bg-zinc-50/50 dark:bg-zinc-950/20 space-y-2">
+                            <img
+                              src={item.imageUrl}
+                              alt={item.category}
+                              className="w-full h-20 object-cover rounded-lg border border-zinc-250 dark:border-zinc-800"
+                            />
+                            <p className="text-[10px] font-bold text-zinc-900 dark:text-zinc-100">{item.category}</p>
+                            <p className="text-[9px] text-zinc-500 dark:text-zinc-400 leading-tight">{item.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

@@ -21,7 +21,10 @@ export async function saveLeadCallSummary(id: number, callSummary: string) {
 // Generate proposal: Returns structured data for PDF rendering
 export async function generateLeadProposal(
   leadId: number,
-  callSummary: string
+  callSummary: string,
+  wantsPortfolio = false,
+  serviceType = "website",
+  agreedPricing?: number
 ): Promise<{ success: boolean; proposal: ParsedProposal; meta: ProposalMeta }> {
   const leads = await db.getLeads();
   const lead = leads.find((l) => l.id === leadId);
@@ -46,6 +49,7 @@ export async function generateLeadProposal(
 
   const geminiApiKey = process.env.GEMINI_API_KEY;
   const openRouterApiKey = process.env.OPENROUTER_API_KEY;
+  const openaiApiKey = process.env.OPENAI_API_KEY;
 
   const meta: ProposalMeta = {
     clientName: lead.name,
@@ -59,6 +63,36 @@ export async function generateLeadProposal(
     }),
   };
 
+  // Select 3 portfolio items based on service type
+  let portfolioItems: { imageUrl: string; category: string; description: string }[] = [];
+  if (wantsPortfolio) {
+    if (serviceType === "website") {
+      portfolioItems = [
+        { imageUrl: "/portfolio/website/Screenshot 2026-07-12 105141.png", category: "Web Design / Development", description: "Premium modern web UI layouts designed for conversion." },
+        { imageUrl: "/portfolio/website/Screenshot 2026-07-12 105149.png", category: "Web Design / Development", description: "Interactive landing pages built with high performant framer motion animations." },
+        { imageUrl: "/portfolio/website/Screenshot 2026-07-12 105200.png", category: "Web Design / Development", description: "Minimalist design systems focused on content and usability." }
+      ];
+    } else if (serviceType === "marketing") {
+      portfolioItems = [
+        { imageUrl: "/portfolio/hero/4.png", category: "Digital Marketing", description: "Social media and marketing page designs." },
+        { imageUrl: "/portfolio/hero/5.png", category: "Digital Marketing", description: "Optimized checkout flows to boost e-commerce performance." },
+        { imageUrl: "/portfolio/ecommerce/1.png", category: "Digital Marketing", description: "SEO-optimized business layouts that drive traffic." }
+      ];
+    } else if (serviceType === "ai-chatbot") {
+      portfolioItems = [
+        { imageUrl: "/portfolio/ai/1.png", category: "AI Chat Assistant", description: "Smart customer support chatbot interface with context awareness." },
+        { imageUrl: "/portfolio/ai/2.png", category: "AI Chat Assistant", description: "Bento grid AI dashboard for data visualization." },
+        { imageUrl: "/portfolio/ai/3.png", category: "AI Chat Assistant", description: "Clean chat console for seamless multi-agent control." }
+      ];
+    } else if (serviceType === "ai-voice-agent") {
+      portfolioItems = [
+        { imageUrl: "/portfolio/ai/4.png", category: "AI Voice Agent", description: "Interactive voice response control panel." },
+        { imageUrl: "/portfolio/ai/1.png", category: "AI Voice Agent", description: "Workflow automation canvas displaying call logs and analytics." },
+        { imageUrl: "/portfolio/ai/3.png", category: "AI Voice Agent", description: "Smart agent onboarding and customization panel." }
+      ];
+    }
+  }
+
   // Match relevant pricing items based on call summary keywords (fallback logic)
   const normalizedSummary = callSummary.toLowerCase();
   let selectedPricing = pricingItems.filter((item) =>
@@ -68,7 +102,15 @@ export async function generateLeadProposal(
       .some((w) => w.length > 3 && normalizedSummary.includes(w))
   );
   if (selectedPricing.length === 0 && pricingItems.length > 0) {
-    selectedPricing = [pricingItems[0]];
+    selectedPricing = pricingItems.filter((item) => {
+      if (serviceType === "website") return item.name.toLowerCase().includes("web") || item.name.toLowerCase().includes("design");
+      if (serviceType === "marketing") return item.name.toLowerCase().includes("seo") || item.name.toLowerCase().includes("marketing");
+      if (serviceType === "ai-chatbot" || serviceType === "ai-voice-agent") return item.name.toLowerCase().includes("ai") || item.name.toLowerCase().includes("bot") || item.name.toLowerCase().includes("agent");
+      return false;
+    });
+    if (selectedPricing.length === 0) {
+      selectedPricing = [pricingItems[0]];
+    }
   }
 
   const defaultTotalInvestment = selectedPricing.reduce((s, p) => s + p.price, 0);
@@ -81,7 +123,7 @@ export async function generateLeadProposal(
   }));
 
   // Default text content & structure
-  let title = `Digital Transformation Proposal for ${lead.name}`;
+  let title = `Proposal for ${lead.name}`;
   let executiveSummary = `The Walking Jumbo has prepared this proposal to outline a collaborative strategy with ${lead.name}. Operating in the ${lead.category} sector in ${lead.city}, our goal is to scale your operations, enhance customer retention, and resolve key objectives noted during our recent discussion.`;
   let scopeContent = `We propose a tailored digital transformation framework for your ${lead.category} business that directly addresses: "${callSummary.slice(0, 150)}". Our solution delivers end-to-end coverage including architecture design, development, QA, and ongoing support.`;
   let scopeItems = [
@@ -106,11 +148,11 @@ export async function generateLeadProposal(
   ];
 
   let finalPricingRows = defaultPricingRows;
-  let finalTotalInvestment = `₹${defaultTotalInvestment.toLocaleString()} + GST`;
+  let finalTotalInvestment = agreedPricing ? `₹${agreedPricing.toLocaleString()} + GST` : `₹${defaultTotalInvestment.toLocaleString()} + GST`;
 
   // System Prompt for AI Generation
   const prompt = `You are a senior business development consultant for "The Walking Jumbo". 
-Write a structured business proposal for the following lead.
+Write a structured business proposal for the following lead, specifically customized for the requested Service Type: "${serviceType}".
 
 Lead Details:
 - Company: ${lead.name}
@@ -127,17 +169,19 @@ ${pricingItems.map((p) => `- ${p.name}: ₹${p.price} (${p.billing}): ${p.descri
 Here are additional pricing, packing & business rules from "pricing.md":
 ${pricingMdContent}
 
+Agreed Pricing: ${agreedPricing ? `₹${agreedPricing}` : "None"}
+
 Based on the call summary and the pricing catalog / pricing rules above:
-1. Formulate the recommended services (name, price, billing structure, description).
-2. Calculate the total investment.
-3. Recommend ONLY matching services. If pricing.md rules differ, prioritize the packages/prices matching the rules in pricing.md.
+1. Formulate the recommended services (name, price, billing structure, description) that match the Service Type: "${serviceType}". If Agreed Pricing is specified above (and is not "None"), you MUST adjust the pricing of the recommended services so that the sum of their prices matches the Agreed Pricing exactly (e.g. if Agreed Pricing is ₹4,000, make the service item price ₹4,000 or distribute the items to sum exactly to ₹4,000).
+2. Calculate the total investment (must match the Agreed Pricing exactly if specified).
+3. Tailor the title, executive summary, scope, timeline and next steps specifically to the Service Type: "${serviceType}" and client goals.
 
 Return ONLY a JSON object (no markdown code blocks, no explanation) with this exact schema:
 {
-  "title": "Creative/professional title tailored to client (e.g., Digital Transformation & SEO for [Client])",
-  "executiveSummary": "2-3 professional sentences about the client, their current business context, and goals",
-  "scopeContent": "1-2 sentences introducing the solution scope customized to their specific request",
-  "scopeItems": ["bullet 1", "bullet 2", "bullet 3", "bullet 4"],
+  "title": "Creative/professional title tailored to client and service (e.g., Digital Transformation & SEO for [Client])",
+  "executiveSummary": "2-3 professional sentences about the client, their current business context, and goals, focusing on the ${serviceType} request",
+  "scopeContent": "1-2 sentences introducing the solution scope customized to their specific request for ${serviceType}",
+  "scopeItems": ["bullet 1 tailored to ${serviceType}", "bullet 2", "bullet 3", "bullet 4"],
   "recommendedInvestmentIntro": "A professional sentence introducing the pricing table and package recommendations",
   "recommendedInvestment": [
     {
@@ -156,8 +200,59 @@ Return ONLY a JSON object (no markdown code blocks, no explanation) with this ex
 
   let aiGenerated = false;
 
-  // 1. Try OpenRouter (support fallback to free models automatically if some return 404/500)
-  if (openRouterApiKey) {
+  // 1. Try OpenAI (cheapest & highly intelligent model: gpt-4o-mini)
+  if (openaiApiKey) {
+    try {
+      console.log("Attempting proposal generation using OpenAI model: gpt-4o-mini");
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${openaiApiKey}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        const rawText = json.choices?.[0]?.message?.content ?? "";
+        const cleaned = rawText.replace(/```json\s*/gi, "").replace(/```/g, "").trim();
+        const parsed = JSON.parse(cleaned);
+        
+        if (parsed.title) title = parsed.title;
+        if (parsed.executiveSummary) executiveSummary = parsed.executiveSummary;
+        if (parsed.scopeContent) scopeContent = parsed.scopeContent;
+        if (parsed.scopeItems) scopeItems = parsed.scopeItems;
+        if (parsed.recommendedInvestmentIntro) recommendedInvestmentIntro = parsed.recommendedInvestmentIntro;
+        if (parsed.recommendedInvestment && Array.isArray(parsed.recommendedInvestment)) {
+          finalPricingRows = parsed.recommendedInvestment;
+        }
+        if (parsed.totalInvestment) {
+          finalTotalInvestment = parsed.totalInvestment;
+        }
+        if (parsed.timelineIntro) timelineIntro = parsed.timelineIntro;
+        if (parsed.timelineItems && Array.isArray(parsed.timelineItems)) {
+          timelineItems = parsed.timelineItems;
+        }
+        if (parsed.nextStepsIntro) nextStepsIntro = parsed.nextStepsIntro;
+        if (parsed.nextStepsItems && Array.isArray(parsed.nextStepsItems)) {
+          nextStepsItems = parsed.nextStepsItems;
+        }
+        aiGenerated = true;
+        console.log("Successfully generated proposal using OpenAI model: gpt-4o-mini");
+      } else {
+        console.warn("OpenAI API returned error status:", res.status);
+      }
+    } catch (e) {
+      console.warn("OpenAI generation failed:", e);
+    }
+  }
+
+  // 2. Try OpenRouter (fallback)
+  if (!aiGenerated && openRouterApiKey) {
     const candidateModels = [
       "google/gemini-2.5-flash", 
       "google/gemini-2.5-flash:free", 
@@ -296,6 +391,10 @@ Return ONLY a JSON object (no markdown code blocks, no explanation) with this ex
     totalInvestment: finalTotalInvestment,
     timeline: [],
     nextSteps: [],
+    wantsPortfolio,
+    portfolioItems,
+    serviceType,
+    agreedPricing,
   };
 
   return { success: true, proposal, meta };
