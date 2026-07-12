@@ -97,7 +97,7 @@ export default function ProposalsPage() {
     }
   };
 
-  const curlCodeId = `curl -X POST http://localhost:3000/api/proposals/generate \\
+  const curlCodeId = `curl -X POST https://stunning-semolina-2f5d9a.netlify.app/api/proposals/generate \\
   -H "Content-Type: application/json" \\
   -d '{
     "leadId": ${selectedLeadId || 1},
@@ -107,7 +107,7 @@ export default function ProposalsPage() {
     "agreedPricing": ${agreedPricing}` : ""}
   }'`;
 
-  const curlCodeFields = `curl -X POST http://localhost:3000/api/proposals/generate \\
+  const curlCodeFields = `curl -X POST https://stunning-semolina-2f5d9a.netlify.app/api/proposals/generate \\
   -H "Content-Type: application/json" \\
   -d '{
     "phone": "${selectedLead?.phone || "9876543210"}",

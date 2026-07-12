@@ -268,7 +268,7 @@ Return ONLY a JSON object (no markdown code blocks, no explanation) with this ex
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${openRouterApiKey}`,
-            "HTTP-Referer": "http://localhost:3000",
+            "HTTP-Referer": "https://stunning-semolina-2f5d9a.netlify.app",
             "X-Title": "The Walking Jumbo Dashboard",
           },
           body: JSON.stringify({
