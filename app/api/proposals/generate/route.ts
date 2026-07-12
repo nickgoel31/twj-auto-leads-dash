@@ -2,7 +2,7 @@ import React from "react";
 import { NextResponse } from "next/server";
 import { generateLeadProposal } from "@/actions/proposals";
 import * as db from "@/lib/turso";
-import { pdf } from "@react-pdf/renderer";
+import { renderToBuffer } from "@react-pdf/renderer";
 import { ProposalDocument } from "@/components/proposal-document";
 import { UTApi } from "uploadthing/server";
 
@@ -107,7 +107,7 @@ export async function POST(request: Request) {
       }
 
       const doc = React.createElement(ProposalDocument, { proposal: result.proposal, meta: result.meta, originUrl: url.origin });
-      const buffer = await pdf(doc as any).toBuffer();
+      const buffer = await renderToBuffer(doc as any);
       const clientNameSafe = result.meta.clientName.replace(/[^a-z0-9]/gi, "_");
       
       const file = new File([buffer as any], `proposal_${clientNameSafe}_${Date.now()}.pdf`, {
