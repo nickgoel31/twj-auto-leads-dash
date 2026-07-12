@@ -4,6 +4,7 @@ import { generateLeadProposal } from "@/actions/proposals";
 import * as db from "@/lib/turso";
 import { pdf } from "@react-pdf/renderer";
 import { ProposalDocument } from "@/components/proposal-document";
+import { UTApi } from "uploadthing/server";
 
 export async function POST(request: Request) {
   try {
@@ -98,13 +99,39 @@ export async function POST(request: Request) {
     const result = await generateLeadProposal(leadIdToUse, summaryToUse, wantsPortfolio, serviceType, agreedPricing);
 
     if (format === "pdf") {
+      if (!process.env.UPLOADTHING_TOKEN) {
+        return NextResponse.json(
+          { error: "Missing environment variable: UPLOADTHING_TOKEN. Please set this in your Netlify variables or .env file." },
+          { status: 500 }
+        );
+      }
+
       const doc = React.createElement(ProposalDocument, { proposal: result.proposal, meta: result.meta, originUrl: url.origin });
       const buffer = await pdf(doc as any).toBuffer();
       const clientNameSafe = result.meta.clientName.replace(/[^a-z0-9]/gi, "_");
-      return new NextResponse(buffer as any, {
-        headers: {
-          "Content-Type": "application/pdf",
-          "Content-Disposition": `attachment; filename="proposal_${clientNameSafe}.pdf"`,
+      
+      const file = new File([buffer as any], `proposal_${clientNameSafe}_${Date.now()}.pdf`, {
+        type: "application/pdf",
+      });
+
+      const utapi = new UTApi({ token: process.env.UPLOADTHING_TOKEN });
+      const uploadRes = await utapi.uploadFiles(file);
+      const uploadData = Array.isArray(uploadRes) ? uploadRes[0] : uploadRes;
+
+      if (uploadData.error) {
+        throw new Error(uploadData.error.message || "UploadThing upload failed");
+      }
+
+      return NextResponse.json({
+        success: true,
+        pdfUrl: uploadData.data.url,
+        lead: {
+          id: lead.id,
+          name: lead.name,
+          domain: lead.domain,
+          category: lead.category,
+          city: lead.city,
+          phone: lead.phone,
         },
       });
     }
