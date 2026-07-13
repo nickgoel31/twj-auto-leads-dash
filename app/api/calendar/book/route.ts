@@ -34,10 +34,12 @@ export async function POST(request: Request) {
     const calApiUrl = new URL("https://api.cal.com/v2/bookings");
 
     // Prepare booking payload for Cal.com v2
+    // Convert the provided start time to a strict UTC ISO string (ending in Z)
+    const utcStart = new Date(start).toISOString();
+
     const bookingPayload = {
-      start,
+      start: utcStart,
       eventTypeId: parseInt(eventTypeId, 10),
-      title: `Meeting with ${name}`, // Required by v2
       attendee: {
         name,
         email: email || "guest@example.com", // Cal.com usually requires an email, so we provide a fallback
