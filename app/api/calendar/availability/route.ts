@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-export async function GET(request: Request) {
+async function handleAvailabilityRequest(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     
@@ -58,7 +58,6 @@ export async function GET(request: Request) {
     const data = await response.json();
 
     // Simplify the payload for the AI voice agent
-    // data.slots is typically an object with keys as dates and values as arrays of slot objects
     const availableSlots = data.slots || {};
 
     return NextResponse.json({
@@ -79,3 +78,13 @@ export async function GET(request: Request) {
     );
   }
 }
+
+export async function GET(request: Request) {
+  return handleAvailabilityRequest(request);
+}
+
+export async function POST(request: Request) {
+  return handleAvailabilityRequest(request);
+}
+
+
