@@ -12,7 +12,14 @@ export async function POST(request: Request) {
     let { leadId, callSummary } = body;
     const wantsPortfolio = body.wantsPortfolio === true || body.wantsPortfolio === "true" || body.wants_portfolio === true || body.wants_portfolio === "true";
     const serviceType = body.serviceType || body.service_type || "website";
-    const agreedPricing = body.agreedPricing ? Number(body.agreedPricing) : (body.agreed_pricing ? Number(body.agreed_pricing) : undefined);
+    
+    let agreedPricing = body.agreedPricing ? Number(body.agreedPricing) : (body.agreed_pricing ? Number(body.agreed_pricing) : undefined);
+    if (agreedPricing === undefined && body.quoted_price) {
+      const parsedVal = Number(String(body.quoted_price).replace(/[^0-9]/g, ""));
+      if (!isNaN(parsedVal)) {
+        agreedPricing = parsedVal;
+      }
+    }
     
     const url = new URL(request.url);
     const format = url.searchParams.get("format") || body.format;
@@ -93,10 +100,27 @@ export async function POST(request: Request) {
       );
     }
 
-    const summaryToUse = payloadCallSummary || lead.call_summary || "General service discussion.";
+    const summaryToUse = payloadCallSummary || body.requirement_summary || lead.call_summary || "General service discussion.";
 
     // Trigger proposal generation
-    const result = await generateLeadProposal(leadIdToUse, summaryToUse, wantsPortfolio, serviceType, agreedPricing);
+    const result = await generateLeadProposal(
+      leadIdToUse, 
+      summaryToUse, 
+      wantsPortfolio, 
+      serviceType, 
+      agreedPricing,
+      {
+        call_outcome: body.call_outcome,
+        need_clarity: body.need_clarity,
+        deal_status: body.deal_status,
+        business_type_detail: body.business_type_detail,
+        requirement_summary: body.requirement_summary,
+        quoted_price: body.quoted_price,
+        discount_offered_pct: body.discount_offered_pct,
+        proposal_notes: body.proposal_notes,
+        proposal_intent: body.proposal_intent,
+      }
+    );
 
     if (format === "pdf") {
       if (!process.env.UPLOADTHING_TOKEN) {

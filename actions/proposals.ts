@@ -24,7 +24,18 @@ export async function generateLeadProposal(
   callSummary: string,
   wantsPortfolio = false,
   serviceType = "website",
-  agreedPricing?: number
+  agreedPricing?: number,
+  additionalContext?: {
+    call_outcome?: string;
+    need_clarity?: string;
+    deal_status?: string;
+    business_type_detail?: string;
+    requirement_summary?: string;
+    quoted_price?: string;
+    discount_offered_pct?: string;
+    proposal_notes?: string;
+    proposal_intent?: string;
+  }
 ): Promise<{ success: boolean; proposal: ParsedProposal; meta: ProposalMeta }> {
   const leads = await db.getLeads();
   const lead = leads.find((l) => l.id === leadId);
@@ -74,27 +85,27 @@ export async function generateLeadProposal(
   if (wantsPortfolio) {
     if (serviceType === "website") {
       portfolioItems = [
-        { imageUrl: "/portfolio/website/Screenshot 2026-07-12 105141.png", category: "Web Design / Development", description: "Premium modern web UI layouts designed for conversion." },
-        { imageUrl: "/portfolio/website/Screenshot 2026-07-12 105149.png", category: "Web Design / Development", description: "Interactive landing pages built with high performant framer motion animations." },
-        { imageUrl: "/portfolio/website/Screenshot 2026-07-12 105200.png", category: "Web Design / Development", description: "Minimalist design systems focused on content and usability." }
+        { imageUrl: "/portfolio/hero/1.png", category: "E-Commerce Interface Layout", description: "Premium modern e-commerce storefront layout optimized for checkout conversion and responsive flow." },
+        { imageUrl: "/portfolio/hero/2.png", category: "Corporate Brand Platform Design", description: "Clean corporate representation website designed with custom typography, service blocks, and inquiry forms." },
+        { imageUrl: "/portfolio/hero/3.png", category: "Bespoke SaaS Landing Template", description: "A high-conversion dashboard preview design tailored for digital service businesses." }
       ];
     } else if (serviceType === "marketing") {
       portfolioItems = [
-        { imageUrl: "/portfolio/hero/4.png", category: "Digital Marketing", description: "Social media and marketing page designs." },
-        { imageUrl: "/portfolio/hero/5.png", category: "Digital Marketing", description: "Optimized checkout flows to boost e-commerce performance." },
-        { imageUrl: "/portfolio/ecommerce/1.png", category: "Digital Marketing", description: "SEO-optimized business layouts that drive traffic." }
+        { imageUrl: "/portfolio/hero/4.png", category: "Conversion-Optimized Landing Design", description: "A local service page engineered with direct call-to-actions, WhatsApp integration, and optimized speed." },
+        { imageUrl: "/portfolio/hero/5.png", category: "Accessible High-Traffic Platform", description: "Design with modern typography and layout structure tailored for accessibility and SEO compliance." },
+        { imageUrl: "/portfolio/hero/6.png", category: "Performance Marketing Interface", description: "Highly optimized web speed architecture to lower cost-per-click and maximize campaign ROI." }
       ];
     } else if (serviceType === "ai-chatbot") {
       portfolioItems = [
-        { imageUrl: "/portfolio/ai/1.png", category: "AI Chat Assistant", description: "Smart customer support chatbot interface with context awareness." },
-        { imageUrl: "/portfolio/ai/2.png", category: "AI Chat Assistant", description: "Bento grid AI dashboard for data visualization." },
-        { imageUrl: "/portfolio/ai/3.png", category: "AI Chat Assistant", description: "Clean chat console for seamless multi-agent control." }
+        { imageUrl: "/portfolio/ai/1.png", category: "Conversational AI Agent Workflow", description: "Bespoke LLM-powered chat interface designed to resolve customer inquiries 24/7." },
+        { imageUrl: "/portfolio/ai/2.png", category: "Workflow Automation Logic Map", description: "Backend integration workflows to trigger CRM updates, auto-respond to leads, and dispatch alerts." },
+        { imageUrl: "/portfolio/ai/3.png", category: "Omnichannel Integrations Console", description: "Connected CRM syncing, instant lead alerts, and database integration across multiple channels." }
       ];
     } else if (serviceType === "ai-voice-agent") {
       portfolioItems = [
-        { imageUrl: "/portfolio/ai/4.png", category: "AI Voice Agent", description: "Interactive voice response control panel." },
-        { imageUrl: "/portfolio/ai/1.png", category: "AI Voice Agent", description: "Workflow automation canvas displaying call logs and analytics." },
-        { imageUrl: "/portfolio/ai/3.png", category: "AI Voice Agent", description: "Smart agent onboarding and customization panel." }
+        { imageUrl: "/portfolio/ai/4.png", category: "Automated Telephony Engine Control", description: "Voice synthesis agent designed to conduct scheduling, qualify leads, and synchronize callback details." },
+        { imageUrl: "/portfolio/ai/1.png", category: "CRM Data Synchronization Pipeline", description: "Real-time sync of lead details, call duration, and post-call summaries into customer databases." },
+        { imageUrl: "/portfolio/ai/3.png", category: "Multi-channel Notification Router", description: "Automated workflow triggering post-call SMS/WhatsApp reminders and notifications." }
       ];
     }
   }
@@ -157,6 +168,42 @@ export async function generateLeadProposal(
   let finalTotalInvestment = agreedPricing ? `₹${agreedPricing.toLocaleString()} + GST` : `₹${defaultTotalInvestment.toLocaleString()} + GST`;
 
   // System Prompt for AI Generation
+  let serviceSpecificGuidance = "";
+  if (serviceType === "website") {
+    serviceSpecificGuidance = `
+For Service Type "website":
+- Focus on web design, UI/UX aesthetics, mobile responsiveness, fast loading speed, contact form or WhatsApp integrations, and clear development phases (Discovery, Wireframing, Development, Testing, Launch).
+- Timeline items should detail phases in weeks (Discovery, Core Development, QA, Deployment).`;
+  } else if (serviceType === "marketing") {
+    serviceSpecificGuidance = `
+For Service Type "marketing":
+- Focus on local SEO optimization, Google My Business (GMB) management, keyword mapping, backlink building, blog/content creation, competitor tracking, and lead-gen campaigns.
+- Timeline items should detail monthly retainer phases (Month 1 Setup & Audit, Month 2 Content & On-Page optimization, Month 3 Link Building & Ranking Growth).`;
+  } else if (serviceType === "ai-chatbot") {
+    serviceSpecificGuidance = `
+For Service Type "ai-chatbot":
+- Focus on automated conversational flows, 24/7 client response time, database/CRM integrations, scheduling automation (Calendly/Cal.com), webhook execution, and hands-free setup.
+- Timeline items should detail integration phases (Conversation Flow Mapping, API & Tool Connections, Beta Testing & Training, Handover).`;
+  } else if (serviceType === "ai-voice-agent") {
+    serviceSpecificGuidance = `
+For Service Type "ai-voice-agent":
+- Focus on automated inbound/outbound calls, voice synthesis, custom prompt engineering for conversational agents, scheduling integrations, sentiment profiling, real-time CRM syncing, and telephony cost reduction.
+- Timeline items should detail voice setup phases (Voice Persona Design, Outbound/Inbound Logic mapping, CRM Integration, Live Telephony Beta, Launch).`;
+  }
+
+  const contextBlock = additionalContext ? `
+Additional Gathering Context:
+- Call Outcome: ${additionalContext.call_outcome || "N/A"}
+- Key Clarifications Needed: ${additionalContext.need_clarity || "N/A"}
+- Deal Status: ${additionalContext.deal_status || "N/A"}
+- Business Type Detail: ${additionalContext.business_type_detail || "N/A"}
+- Requirement Summary: ${additionalContext.requirement_summary || "N/A"}
+- Quoted Price: ${additionalContext.quoted_price || "N/A"}
+- Discount Offered: ${additionalContext.discount_offered_pct || "N/A"}%
+- Proposal Notes: ${additionalContext.proposal_notes || "N/A"}
+- Proposal Intent: ${additionalContext.proposal_intent || "N/A"}
+` : "";
+
   const prompt = `You are a senior business development consultant for "The Walking Jumbo". 
 Write a structured business proposal for the following lead, specifically customized for the requested Service Type: "${serviceType}".
 
@@ -168,6 +215,7 @@ Lead Details:
 
 Call Summary / Client Goals:
 "${callSummary}"
+${contextBlock}
 
 Here is the database's available pricing options:
 ${pricingItems.map((p) => `- ${p.name}: ₹${p.price} (${p.billing}): ${p.description}`).join("\n")}
@@ -178,11 +226,14 @@ ${pricingMdContent}
 Agreed Pricing: ${agreedPricing ? `₹${agreedPricing}` : "None"}
 
 Based on the call summary and the pricing catalog / pricing rules above:
+${serviceSpecificGuidance}
+
 1. Formulate the recommended services (name, price, billing structure, description) that match the Service Type: "${serviceType}". 
    - CRITICAL: If Agreed Pricing is specified above (and is not "None"), you MUST ignore any pricing or numbers mentioned in the Call Summary (for example, if the Call Summary mentions 4000 but the Agreed Pricing is 8000, you MUST use 8000). The total investment and the sum of recommended service prices MUST match the Agreed Pricing exactly.
    - If Agreed Pricing is "None", default back to the pricing mentioned in the Call Summary or the pricing rules in pricing.md.
 2. Calculate the total investment (must match the Agreed Pricing exactly if specified).
 3. Tailor the title, executive summary, scope, timeline and next steps specifically to the Service Type: "${serviceType}" and client goals.
+
 
 Return ONLY a JSON object (no markdown code blocks, no explanation) with this exact schema:
 {
