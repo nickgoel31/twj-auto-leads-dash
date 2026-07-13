@@ -57,8 +57,9 @@ async function handleAvailabilityRequest(request: Request) {
 
     const data = await response.json();
 
-    // Simplify the payload for the AI voice agent
-    const availableSlots = data.slots || {};
+    // Simplify the payload for the AI voice agent by falling back gracefully
+    // Cal.com v2 wraps responses inside a "data" object (e.g. data.data.slots or data.data as an array)
+    const availableSlots = data.data?.slots || data.data || data.slots || data;
 
     return NextResponse.json({
       success: true,
