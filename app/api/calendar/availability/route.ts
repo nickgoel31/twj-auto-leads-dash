@@ -26,19 +26,19 @@ export async function GET(request: Request) {
     const startTime = searchParams.get("startDate") || defaultStartDate.toISOString();
     const endTime = searchParams.get("endDate") || defaultEndDate.toISOString();
 
-    // Construct the Cal.com API URL
-    // Cal.com v1 uses apiKey query param for auth
-    const calApiUrl = new URL("https://api.cal.com/v1/slots");
+    // Construct the Cal.com API URL for v2
+    const calApiUrl = new URL("https://api.cal.com/v2/slots");
     calApiUrl.searchParams.append("eventTypeId", eventTypeId);
-    calApiUrl.searchParams.append("startTime", startTime);
-    calApiUrl.searchParams.append("endTime", endTime);
-    calApiUrl.searchParams.append("apiKey", apiKey);
+    calApiUrl.searchParams.append("start", startTime);
+    calApiUrl.searchParams.append("end", endTime);
 
     // Fetch availability from Cal.com
     const response = await fetch(calApiUrl.toString(), {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+        "cal-api-version": "2024-08-13"
       }
     });
 

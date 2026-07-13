@@ -30,32 +30,33 @@ export async function POST(request: Request) {
       );
     }
 
-    // Construct the Cal.com API URL
-    const calApiUrl = new URL("https://api.cal.com/v1/bookings");
-    calApiUrl.searchParams.append("apiKey", apiKey);
+    // Construct the Cal.com API URL for v2
+    const calApiUrl = new URL("https://api.cal.com/v2/bookings");
 
-    // Prepare booking payload for Cal.com
+    // Prepare booking payload for Cal.com v2
     const bookingPayload = {
-      eventTypeId: parseInt(eventTypeId, 10),
       start,
-      responses: {
+      eventTypeId: parseInt(eventTypeId, 10),
+      attendee: {
         name,
         email,
-        phone: phone || "",
-        notes: notes || "Booked via AI Voice Agent"
-      },
-      metadata: {
-        source: "AI Voice Agent"
-      },
-      timeZone: "UTC", // Defaulting to UTC, can be passed by client if needed
-      language: "en"
+        timeZone: "UTC",
+        language: "en"
+      }
     };
+    
+    // Add phone to attendee if provided
+    if (phone) {
+      (bookingPayload as any).attendee.phoneNumber = phone;
+    }
 
     // Make the booking via Cal.com
     const response = await fetch(calApiUrl.toString(), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+        "cal-api-version": "2024-08-13"
       },
       body: JSON.stringify(bookingPayload)
     });
@@ -71,8 +72,8 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       message: "Successfully booked the meeting.",
-      bookingId: data.booking?.id || data.id,
-      meetingUrl: data.booking?.metadata?.videoCallUrl || data.videoCallUrl,
+      bookingId: data.data?.id || data.id,
+      meetingUrl: data.data?.metadata?.videoCallUrl || data.data?.videoCallUrl || null,
       raw: data
     });
 
