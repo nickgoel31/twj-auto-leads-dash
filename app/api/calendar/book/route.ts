@@ -20,11 +20,11 @@ export async function POST(request: Request) {
 
     const { start, name, email, phone, notes } = body;
 
-    if (!start || !name || !email) {
+    if (!start || !name) {
       return NextResponse.json(
         { 
           error: "Missing required fields", 
-          message: "Please provide 'start' (ISO string), 'name', and 'email'." 
+          message: "Please provide 'start' (ISO string) and 'name'." 
         },
         { status: 400 }
       );
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
       eventTypeId: parseInt(eventTypeId, 10),
       attendee: {
         name,
-        email,
+        email: email || "guest@example.com", // Cal.com usually requires an email, so we provide a fallback
         timeZone: "UTC",
         language: "en"
       }
