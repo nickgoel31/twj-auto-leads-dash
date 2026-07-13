@@ -37,6 +37,7 @@ export async function POST(request: Request) {
     const bookingPayload = {
       start,
       eventTypeId: parseInt(eventTypeId, 10),
+      title: `Meeting with ${name}`, // Required by v2
       attendee: {
         name,
         email: email || "guest@example.com", // Cal.com usually requires an email, so we provide a fallback
@@ -64,7 +65,13 @@ export async function POST(request: Request) {
     if (!response.ok) {
       const errText = await response.text();
       console.error("Cal.com API error details:", errText);
-      throw new Error(`Cal.com Booking API error: ${response.status} ${response.statusText}`);
+      return NextResponse.json(
+        { 
+          error: `Cal.com Booking API error: ${response.status} ${response.statusText}`, 
+          details: errText 
+        },
+        { status: 400 }
+      );
     }
 
     const data = await response.json();

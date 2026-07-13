@@ -23,8 +23,9 @@ export async function GET(request: Request) {
     const defaultEndDate = new Date();
     defaultEndDate.setDate(defaultEndDate.getDate() + 7);
 
-    const startTime = searchParams.get("startDate") || defaultStartDate.toISOString();
-    const endTime = searchParams.get("endDate") || defaultEndDate.toISOString();
+    // Accept both camelCase and snake_case for flexibility
+    const startTime = searchParams.get("startDate") || searchParams.get("start_date") || defaultStartDate.toISOString();
+    const endTime = searchParams.get("endDate") || searchParams.get("end_date") || defaultEndDate.toISOString();
 
     // Construct the Cal.com API URL for v2
     const calApiUrl = new URL("https://api.cal.com/v2/slots");
@@ -45,7 +46,13 @@ export async function GET(request: Request) {
     if (!response.ok) {
       const errText = await response.text();
       console.error("Cal.com API error details:", errText);
-      throw new Error(`Cal.com API error: ${response.status} ${response.statusText}`);
+      return NextResponse.json(
+        { 
+          error: `Cal.com Availability API error: ${response.status} ${response.statusText}`, 
+          details: errText 
+        },
+        { status: 400 }
+      );
     }
 
     const data = await response.json();
