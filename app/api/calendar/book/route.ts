@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${apiKey}`,
-        "cal-api-version": "2024-08-13"
+        "cal-api-version": "2024-09-04"
       },
       body: JSON.stringify(bookingPayload)
     });
