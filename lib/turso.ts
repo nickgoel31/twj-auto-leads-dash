@@ -76,7 +76,10 @@ export async function initializeDatabase() {
         callback_scheduled INTEGER DEFAULT 0,
         services_sold TEXT,
         pain_points_post_call TEXT,
-        final_pricing_agreed TEXT
+        final_pricing_agreed TEXT,
+        proposal_sent INTEGER DEFAULT 0,
+        proposal_link TEXT,
+        last_contacted TEXT
       )
     `);
 
@@ -113,7 +116,10 @@ export async function initializeDatabase() {
       "ALTER TABLE leads ADD COLUMN callback_scheduled INTEGER DEFAULT 0",
       "ALTER TABLE leads ADD COLUMN services_sold TEXT",
       "ALTER TABLE leads ADD COLUMN pain_points_post_call TEXT",
-      "ALTER TABLE leads ADD COLUMN final_pricing_agreed TEXT"
+      "ALTER TABLE leads ADD COLUMN final_pricing_agreed TEXT",
+      "ALTER TABLE leads ADD COLUMN proposal_sent INTEGER DEFAULT 0",
+      "ALTER TABLE leads ADD COLUMN proposal_link TEXT",
+      "ALTER TABLE leads ADD COLUMN last_contacted TEXT"
     ];
 
     for (const sql of newColumns) {

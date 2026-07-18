@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { client, initializeDatabase } from "@/lib/turso";
 import { NEW_LEAD_PROMPT, POST_PROPOSAL_PROMPT } from "@/lib/prompts";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
-// Initialize Anthropic client (reads ANTHROPIC_API_KEY from environment variables)
-const anthropic = new Anthropic();
+// Initialize OpenAI client (reads OPENAI_API_KEY from environment variables)
+const openai = new OpenAI();
 
 export async function GET(req: NextRequest) {
   const mode = req.nextUrl.searchParams.get("hub.mode");
@@ -45,10 +45,10 @@ export async function POST(req: NextRequest) {
     const text = message.text?.body || "";
     const contactName = change?.contacts?.[0]?.profile?.name || "there";
 
-    // 2. Query the leads_for_whatsapp table
+    // 2. Query the leads table
     await initializeDatabase();
     const leadResult = await client.execute({
-      sql: "SELECT * FROM leads_for_whatsapp WHERE phone = ?",
+      sql: "SELECT * FROM leads WHERE phone = ?",
       args: [from],
     });
     
@@ -83,12 +83,15 @@ export async function POST(req: NextRequest) {
 
     const userMessage = `Conversation so far:\\n${historyText}\\n\\nNew message from ${contactName}: ${text}`;
 
-    // 4. Call Anthropic API
-    const response = await anthropic.messages.create({
-      model: "claude-haiku-4-5", 
+    // 4. Call OpenAI API
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini", 
       max_tokens: 300,
-      system: systemPrompt,
       messages: [
+        {
+          role: "system",
+          content: systemPrompt,
+        },
         {
           role: "user",
           content: userMessage,
@@ -96,7 +99,7 @@ export async function POST(req: NextRequest) {
       ],
     });
 
-    const replyText = response.content[0].type === "text" ? response.content[0].text : "";
+    const replyText = response.choices[0].message?.content || "";
 
     // 5. Send reply via WhatsApp API
     const phoneNumberId = process.env.PHONE_NUMBER_ID;
@@ -138,12 +141,12 @@ export async function POST(req: NextRequest) {
     const currentTimestamp = new Date().toISOString();
     await client.execute({
       sql: `
-        INSERT INTO leads_for_whatsapp (phone, name, proposal_sent, last_contacted) 
-        VALUES (?, ?, 0, ?)
+        INSERT INTO leads (phone, name, proposal_sent, last_contacted, created_at, source) 
+        VALUES (?, ?, 0, ?, ?, 'WhatsApp')
         ON CONFLICT(phone) DO UPDATE SET 
           last_contacted = excluded.last_contacted
       `,
-      args: [from, contactName, currentTimestamp],
+      args: [from, contactName, currentTimestamp, currentTimestamp],
     });
 
     // 8. Return success
