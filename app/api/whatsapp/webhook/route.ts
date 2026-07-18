@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
 
     // 4. Call Anthropic API
     const response = await anthropic.messages.create({
-      model: "claude-3-5-haiku-20241022", // using exact version for compatibility with providers that do not support the -latest alias
+      model: "claude-haiku-4-5", 
       max_tokens: 300,
       system: systemPrompt,
       messages: [
