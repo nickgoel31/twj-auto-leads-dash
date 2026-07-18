@@ -4,10 +4,14 @@ import { client, initializeDatabase } from "@/lib/turso";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { phone, proposal_sent, proposal_link } = body;
+    let { phone, proposal_sent, proposal_link } = body;
 
     if (!phone) {
       return NextResponse.json({ error: "Phone number is required" }, { status: 400 });
+    }
+
+    if (phone.startsWith("91") && phone.length > 10) {
+      phone = phone.substring(2);
     }
 
     if (proposal_sent === undefined) {

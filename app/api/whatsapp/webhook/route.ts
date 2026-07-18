@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
 
     const message = messages[0];
     const from = message.from;
+    const dbPhone = from.startsWith("91") && from.length > 10 ? from.substring(2) : from;
     const text = message.text?.body || "";
     const contactName = change?.contacts?.[0]?.profile?.name || "there";
 
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
     await initializeDatabase();
     const leadResult = await client.execute({
       sql: "SELECT * FROM leads WHERE phone = ?",
-      args: [from],
+      args: [dbPhone],
     });
     
     let systemPrompt = NEW_LEAD_PROMPT;
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
     // 3. Query the last 10 rows from chat_history
     const historyResult = await client.execute({
       sql: "SELECT * FROM (SELECT role, message, created_at FROM chat_history WHERE phone = ? ORDER BY created_at DESC LIMIT 10) ORDER BY created_at ASC",
-      args: [from],
+      args: [dbPhone],
     });
 
     let historyText = "No previous conversation.";
@@ -130,11 +131,11 @@ export async function POST(req: NextRequest) {
     // 6. Insert into chat_history
     await client.execute({
       sql: "INSERT INTO chat_history (phone, role, message) VALUES (?, ?, ?)",
-      args: [from, "user", text],
+      args: [dbPhone, "user", text],
     });
     await client.execute({
       sql: "INSERT INTO chat_history (phone, role, message) VALUES (?, ?, ?)",
-      args: [from, "assistant", replyText],
+      args: [dbPhone, "assistant", replyText],
     });
 
     // 7. Upsert leads table
@@ -146,7 +147,7 @@ export async function POST(req: NextRequest) {
         ON CONFLICT(phone) DO UPDATE SET 
           last_contacted = excluded.last_contacted
       `,
-      args: [from, contactName, currentTimestamp, currentTimestamp],
+      args: [dbPhone, contactName, currentTimestamp, currentTimestamp],
     });
 
     // 8. Return success
