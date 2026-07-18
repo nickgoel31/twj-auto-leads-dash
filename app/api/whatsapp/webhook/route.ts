@@ -7,13 +7,17 @@ import Anthropic from "@anthropic-ai/sdk";
 const anthropic = new Anthropic();
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const mode = searchParams.get("hub.mode");
-  const token = searchParams.get("hub.verify_token");
-  const challenge = searchParams.get("hub.challenge");
+  const mode = req.nextUrl.searchParams.get("hub.mode");
+  const token = req.nextUrl.searchParams.get("hub.verify_token");
+  const challenge = req.nextUrl.searchParams.get("hub.challenge");
 
   if (mode === "subscribe" && token === process.env.WHATSAPP_VERIFY_TOKEN) {
-    return new NextResponse(challenge, { status: 200 });
+    return new NextResponse(challenge, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/plain",
+      },
+    });
   } else {
     return new NextResponse("Forbidden", { status: 403 });
   }
@@ -22,6 +26,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    
+    // Log the incoming payload shape for debugging
+    console.log("Incoming Webhook Payload:", JSON.stringify(body, null, 2));
 
     // 1. Parse incoming JSON body
     const entry = body.entry?.[0];
