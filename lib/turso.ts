@@ -80,6 +80,32 @@ export async function initializeDatabase() {
       )
     `);
 
+    // WhatsApp tables
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS leads_for_whatsapp (
+        phone TEXT PRIMARY KEY,
+        name TEXT,
+        proposal_sent INTEGER DEFAULT 0,
+        proposal_link TEXT,
+        last_contacted TEXT,
+        notes TEXT
+      )
+    `);
+
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS chat_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        phone TEXT NOT NULL,
+        role TEXT NOT NULL,
+        message TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await client.execute(`
+      CREATE INDEX IF NOT EXISTS idx_chat_history_phone ON chat_history(phone)
+    `);
+
     // Dynamic migrations: add columns if they do not exist
     const newColumns = [
       "ALTER TABLE leads ADD COLUMN call_summary TEXT",
