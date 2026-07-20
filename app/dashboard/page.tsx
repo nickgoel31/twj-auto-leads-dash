@@ -83,7 +83,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="flex-1 min-h-screen bg-zinc-50 dark:bg-zinc-950 grid-bg transition-colors duration-300">
+    <div className="flex-1 h-screen overflow-y-auto bg-zinc-50 dark:bg-zinc-950 grid-bg transition-colors duration-300">
       {/* Header bar */}
       <header className="sticky top-0 z-40 w-full border-b border-zinc-200 bg-white/80 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/80">
         <div className="flex items-center justify-between py-4 px-6">

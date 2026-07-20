@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "@/components/theme-provider";
-import { LayoutDashboard, FileText, Settings, Sun, Moon, Database, HelpCircle, LogOut } from "lucide-react";
+import { LayoutDashboard, FileText, Settings, Sun, Moon, Database, HelpCircle, LogOut, FileCheck, MessageCircle } from "lucide-react";
 import { logoutAction } from "@/actions/auth";
 
 export function Sidebar() {
@@ -14,6 +14,8 @@ export function Sidebar() {
   const navigation = [
     { name: "Analytics", href: "/dashboard", icon: LayoutDashboard },
     { name: "Proposal Builder", href: "/dashboard/proposals", icon: FileText },
+    { name: "Proposals Sent", href: "/dashboard/proposals-sent", icon: FileCheck },
+    { name: "WhatsApp Chat", href: "/dashboard/whatsapp", icon: MessageCircle },
     { name: "Services & Pricing", href: "/dashboard/pricing", icon: Settings },
   ];
 

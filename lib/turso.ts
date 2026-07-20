@@ -487,3 +487,114 @@ export async function updateLeadCallSummary(id: number, callSummary: string) {
   });
 }
 
+export interface ProposalLead {
+  id: number;
+  name: string;
+  phone: string;
+  email: string;
+  domain: string;
+  category: string;
+  city: string;
+  rating: number;
+  reviews_count: number;
+  proposal_sent: number;
+  proposal_link: string;
+  last_contacted: string;
+  created_at: string;
+  services_sold: string;
+  final_pricing_agreed: string;
+}
+
+export async function getProposalSentLeads(): Promise<ProposalLead[]> {
+  await initializeDatabase();
+  const res = await client.execute(
+    "SELECT id, name, phone, email, domain, category, city, rating, reviews_count, proposal_sent, proposal_link, last_contacted, created_at, services_sold, final_pricing_agreed FROM leads WHERE proposal_sent = 1 ORDER BY last_contacted DESC"
+  );
+  return res.rows.map((row) => ({
+    id: Number(row.id),
+    name: String(row.name || ""),
+    phone: String(row.phone || ""),
+    email: String(row.email || ""),
+    domain: String(row.domain || ""),
+    category: String(row.category || ""),
+    city: String(row.city || ""),
+    rating: Number(row.rating || 0),
+    reviews_count: Number(row.reviews_count || 0),
+    proposal_sent: Number(row.proposal_sent || 0),
+    proposal_link: String(row.proposal_link || ""),
+    last_contacted: String(row.last_contacted || ""),
+    created_at: String(row.created_at || ""),
+    services_sold: String(row.services_sold || ""),
+    final_pricing_agreed: String(row.final_pricing_agreed || ""),
+  })) as ProposalLead[];
+}
+
+export interface WhatsAppConversation {
+  phone: string;
+  name: string;
+  last_message: string;
+  last_message_role: string;
+  last_message_time: string;
+  message_count: number;
+  proposal_sent: number;
+}
+
+export async function getWhatsAppConversations(): Promise<WhatsAppConversation[]> {
+  await initializeDatabase();
+  const res = await client.execute(`
+    SELECT 
+      ch.phone,
+      COALESCE(l.name, ch.phone) as name,
+      COALESCE(l.proposal_sent, 0) as proposal_sent,
+      MAX(ch.created_at) as last_message_time,
+      COUNT(ch.id) as message_count
+    FROM chat_history ch
+    LEFT JOIN leads l ON l.phone = ch.phone
+    GROUP BY ch.phone
+    ORDER BY last_message_time DESC
+  `);
+
+  // For each conversation, get the latest message text and role
+  const conversations: WhatsAppConversation[] = [];
+  for (const row of res.rows) {
+    const phone = String(row.phone);
+    const lastMsgRes = await client.execute({
+      sql: "SELECT role, message FROM chat_history WHERE phone = ? ORDER BY created_at DESC LIMIT 1",
+      args: [phone],
+    });
+    const lastMsg = lastMsgRes.rows[0];
+    conversations.push({
+      phone,
+      name: String(row.name || phone),
+      last_message: lastMsg ? String(lastMsg.message || "") : "",
+      last_message_role: lastMsg ? String(lastMsg.role || "") : "",
+      last_message_time: String(row.last_message_time || ""),
+      message_count: Number(row.message_count || 0),
+      proposal_sent: Number(row.proposal_sent || 0),
+    });
+  }
+  return conversations;
+}
+
+export interface ChatMessage {
+  id: number;
+  phone: string;
+  role: string;
+  message: string;
+  created_at: string;
+}
+
+export async function getConversationMessages(phone: string): Promise<ChatMessage[]> {
+  await initializeDatabase();
+  const res = await client.execute({
+    sql: "SELECT id, phone, role, message, created_at FROM chat_history WHERE phone = ? ORDER BY created_at ASC",
+    args: [phone],
+  });
+  return res.rows.map((row) => ({
+    id: Number(row.id),
+    phone: String(row.phone),
+    role: String(row.role),
+    message: String(row.message),
+    created_at: String(row.created_at),
+  })) as ChatMessage[];
+}
