@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "@/components/theme-provider";
-import { LayoutDashboard, FileText, Settings, Sun, Moon, Database, HelpCircle, LogOut, FileCheck, MessageCircle } from "lucide-react";
+import { LayoutDashboard, FileText, Settings, Sun, Moon, Database, HelpCircle, LogOut, FileCheck, MessageCircle, MessageSquareCheck } from "lucide-react";
 import { logoutAction } from "@/actions/auth";
 
 export function Sidebar() {
@@ -16,6 +16,7 @@ export function Sidebar() {
     { name: "Proposal Builder", href: "/dashboard/proposals", icon: FileText },
     { name: "Proposals Sent", href: "/dashboard/proposals-sent", icon: FileCheck },
     { name: "WhatsApp Chat", href: "/dashboard/whatsapp", icon: MessageCircle },
+    { name: "WA Demo Sent", href: "/dashboard/whatsapp-demo", icon: MessageSquareCheck },
     { name: "Services & Pricing", href: "/dashboard/pricing", icon: Settings },
   ];
 

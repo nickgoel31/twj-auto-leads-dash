@@ -79,7 +79,9 @@ export async function initializeDatabase() {
         final_pricing_agreed TEXT,
         proposal_sent INTEGER DEFAULT 0,
         proposal_link TEXT,
-        last_contacted TEXT
+        last_contacted TEXT,
+        whatsapp_demo_sent INTEGER DEFAULT 0,
+        whatsapp_demo_sent_at TEXT
       )
     `);
 
@@ -119,7 +121,9 @@ export async function initializeDatabase() {
       "ALTER TABLE leads ADD COLUMN final_pricing_agreed TEXT",
       "ALTER TABLE leads ADD COLUMN proposal_sent INTEGER DEFAULT 0",
       "ALTER TABLE leads ADD COLUMN proposal_link TEXT",
-      "ALTER TABLE leads ADD COLUMN last_contacted TEXT"
+      "ALTER TABLE leads ADD COLUMN last_contacted TEXT",
+      "ALTER TABLE leads ADD COLUMN whatsapp_demo_sent INTEGER DEFAULT 0",
+      "ALTER TABLE leads ADD COLUMN whatsapp_demo_sent_at TEXT"
     ];
 
     for (const sql of newColumns) {
