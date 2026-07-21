@@ -139,7 +139,9 @@ export async function POST(request: Request) {
           { 
             resource_type: "raw", 
             public_id: `proposal_${clientNameSafe}_${Date.now()}.pdf`,
-            format: "pdf"
+            format: "pdf",
+            access_mode: "public",
+            type: "upload"
           },
           (error, result) => {
             if (error) {
