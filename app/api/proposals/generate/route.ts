@@ -4,7 +4,7 @@ import { generateLeadProposal } from "@/actions/proposals";
 import * as db from "@/lib/turso";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { ProposalDocument } from "@/components/proposal-document";
-import { UTApi } from "uploadthing/server";
+import { v2 as cloudinary } from "cloudinary";
 
 export async function POST(request: Request) {
   try {
@@ -123,9 +123,9 @@ export async function POST(request: Request) {
     );
 
     if (format === "pdf") {
-      if (!process.env.UPLOADTHING_TOKEN) {
+      if (!process.env.CLOUDINARY_URL) {
         return NextResponse.json(
-          { error: "Missing environment variable: UPLOADTHING_TOKEN. Please set this in your Netlify variables or .env file." },
+          { error: "Missing environment variable: CLOUDINARY_URL. Please set this in your Netlify variables or .env file." },
           { status: 500 }
         );
       }
@@ -134,21 +134,29 @@ export async function POST(request: Request) {
       const buffer = await renderToBuffer(doc as any);
       const clientNameSafe = result.meta.clientName.replace(/[^a-z0-9]/gi, "_");
       
-      const file = new File([buffer as any], `proposal_${clientNameSafe}_${Date.now()}.pdf`, {
-        type: "application/pdf",
+      const pdfUrl = await new Promise<string>((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { 
+            resource_type: "raw", 
+            public_id: `proposal_${clientNameSafe}_${Date.now()}.pdf`,
+            format: "pdf"
+          },
+          (error, result) => {
+            if (error) {
+              reject(new Error(error.message || "Cloudinary upload failed"));
+            } else if (result) {
+              resolve(result.secure_url);
+            } else {
+              reject(new Error("Cloudinary upload failed: no result returned"));
+            }
+          }
+        );
+        uploadStream.end(buffer as any);
       });
-
-      const utapi = new UTApi({ token: process.env.UPLOADTHING_TOKEN });
-      const uploadRes = await utapi.uploadFiles(file);
-      const uploadData = Array.isArray(uploadRes) ? uploadRes[0] : uploadRes;
-
-      if (uploadData.error) {
-        throw new Error(uploadData.error.message || "UploadThing upload failed");
-      }
 
       return NextResponse.json({
         success: true,
-        pdfUrl: uploadData.data.url,
+        pdfUrl: pdfUrl,
         lead: {
           id: lead.id,
           name: lead.name,
